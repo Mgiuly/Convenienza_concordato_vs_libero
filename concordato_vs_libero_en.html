@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giuliato&Battistin | Rental Analysis Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-primary: #6366F1;
+            --brand-dark: #4F46E5;
+            --brand-bg: #EEF2FF;
+            --whatsapp-green: #25D366;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F3F4F6;
+            color: var(--text-secondary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- USER INTERFACE (Web View) --- */
+        .web-container {
+            padding: 32px;
+        }
+
+        h1 { color: var(--text-primary); font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        p.subtitle { text-align: center; font-size: 14px; margin-bottom: 32px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .input-group label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: var(--text-primary); }
+        .input-group input {
+            width: 100%; box-sizing: border-box; padding: 10px;
+            border: 1px solid var(--border-color); border-radius: 6px;
+            font-size: 14px; transition: border-color 0.2s;
+        }
+        .input-group input:focus { outline: none; border-color: var(--brand-primary); ring: 2px solid var(--brand-bg); }
+
+        /* Tax Bracket Badge */
+        .badge-irpef {
+            font-size: 11px; padding: 2px 6px; border-radius: 4px;
+            background-color: #FEF3C7; color: #D97706; font-weight: 600;
+            display: none; /* Visible via JS */
+        }
+
+        .note {
+            background-color: rgba(234, 179, 8, 0.05);
+            border-left: 4px solid #F59E0B;
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .note p { margin: 0; font-size: 13px; color: #B45309; line-height: 1.5; }
+        .note strong { color: #92400E; }
+
+        .disclaimer {
+            font-size: 11px; color: #9CA3AF; margin-top: 24px; padding: 16px;
+            background-color: #F9FAFB; border-radius: 8px; line-height: 1.5;
+        }
+
+        footer {
+            text-align: center; margin-top: 40px; padding-top: 24px;
+            border-top: 1px solid #E5E7EB; font-size: 13px;
+        }
+        footer p { margin: 4px 0; }
+        footer strong { color: var(--text-primary); font-weight: 600; }
+        footer a { color: var(--brand-primary); text-decoration: none; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; justify-content: center; align-items: center;
+            padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;
+            cursor: pointer; border: none; transition: all 0.2s; text-decoration: none;
+            width: 100%; box-sizing: border-box;
+        }
+        .btn-primary { background-color: var(--brand-primary); color: white; }
+        .btn-primary:hover { background-color: var(--brand-dark); }
+        .btn-whatsapp { background-color: var(--whatsapp-green); color: white; }
+        .btn-outline { background-color: white; border: 1px solid var(--border-color); color: var(--text-primary); }
+        .btn-outline:hover { background-color: #F9FAFB; }
+
+        .results-section { display: none; margin-top: 40px; border-top: 1px solid var(--border-color); padding-top: 32px; }
+        .results-section.visible { display: block; }
+
+        .highlight-box {
+            background: var(--brand-bg); border-radius: 8px; padding: 20px;
+            text-align: center; margin-bottom: 24px;
+        }
+        .highlight-box span { display: block; font-size: 24px; font-weight: 700; color: var(--brand-primary); margin-top: 5px; }
+
+        /* Explanation Box */
+        .explanation-box {
+            background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px;
+            padding: 16px; margin-bottom: 32px; font-size: 13px; color: #166534;
+        }
+
+        .chart-wrapper { position: relative; height: 350px; width: 100%; margin: 20px 0; }
+
+        /* Web Table Style */
+        .web-table-wrapper { overflow-x: auto; margin-bottom: 30px; border: 1px solid #E5E7EB; border-radius: 8px; }
+        .web-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .web-table th { background-color: #F9FAFB; text-align: left; padding: 12px 16px; font-weight: 600; color: var(--text-primary); }
+        .web-table td { padding: 12px 16px; border-top: 1px solid #E5E7EB; color: var(--text-secondary); white-space: nowrap; }
+        .web-table tr:last-child td { font-weight: 700; color: var(--brand-dark); background-color: #EEF2FF; }
+
+        /* --- PDF SPECIFIC LAYOUT (Hidden on Web) --- */
+        #pdf-template {
+            display: none; /* Invisible on screen */
+            background: white;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            color: #111;
+        }
+
+        /* Show template when generating PDF */
+        .generating-pdf #pdf-template { display: block; padding: 30px; }
+        .generating-pdf .web-container { display: none; } /* Hide Web UI */
+
+        /* PDF Report Styles */
+        .pdf-header-bar {
+            border-bottom: 2px solid var(--brand-primary);
+            padding-bottom: 15px; margin-bottom: 25px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+        .brand-name { font-size: 20px; font-weight: 800; color: var(--brand-primary); text-transform: uppercase; letter-spacing: -0.5px; }
+        .brand-info { font-size: 10px; text-align: right; color: #666; line-height: 1.4; }
+
+        .pdf-title { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 5px; }
+        .pdf-date { font-size: 11px; color: #888; margin-bottom: 25px; }
+
+        /* Input Data Summary Grid (Compact) */
+        .summary-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;
+            background: #F9FAFB; padding: 15px; border-radius: 6px;
+            margin-bottom: 25px; border: 1px solid #EEE;
+        }
+        .summary-item { display: flex; justify-content: space-between; border-bottom: 1px dotted #DDD; padding-bottom: 3px; }
+        .summary-label { font-size: 10px; color: #666; font-weight: 500; }
+        .summary-value { font-size: 11px; font-weight: 700; color: #111; }
+
+        /* PDF Results Layout */
+        .pdf-results-container {
+            display: flex; gap: 20px; margin-bottom: 25px;
+            break-inside: avoid;
+        }
+        .pdf-main-metric {
+            flex: 1; background: var(--brand-bg); border-radius: 6px; padding: 15px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        .pdf-main-metric p { font-size: 11px; color: #555; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .pdf-main-metric h3 { font-size: 22px; color: var(--brand-primary); margin: 5px 0 0 0; }
+        
+        .pdf-chart-box { flex: 2; height: 180px; position: relative; }
+
+        /* Clean PDF Table */
+        .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; }
+        .pdf-table th { text-align: left; background: #F3F4F6; padding: 6px 8px; font-weight: 600; color: #374151; }
+        .pdf-table td { border-bottom: 1px solid #EEE; padding: 6px 8px; color: #111; }
+        .pdf-table tr:last-child td { border-bottom: none; font-weight: 700; background: #F9FAFB; }
+
+        .pdf-footer {
+            margin-top: 30px; padding-top: 15px; border-top: 1px solid #EEE;
+            font-size: 9px; color: #999; text-align: center;
+            break-inside: avoid;
+        }
+
+        .no-break { break-inside: avoid; page-break-inside: avoid; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); z-index:99; justify-content:center; align-items:center; }
+        .modal-box { background:white; padding:20px; border-radius:8px; max-width:400px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper" id="main-app">
+        
+        <!-- 1. WEB VIEW -->
+        <div class="web-container">
+            <h1>Rental Profitability Analysis</h1>
+            <p class="subtitle">Fiscal comparison: Agreed Rent vs. Free Market Rent</p>
+
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>Agreed Monthly Rent (€)</label>
+                    <input type="number" id="inp_canone" value="650">
+                </div>
+                <div class="input-group">
+                    <label>Cadastral Rent (€)</label>
+                    <input type="number" id="inp_rendita" value="704.96">
+                </div>
+                <div class="input-group">
+                    <label>Standard Property Tax (‰)</label>
+                    <input type="number" id="inp_imu" value="10.6">
+                </div>
+                <div class="input-group">
+                    <label>Reduced Property Tax (‰)</label>
+                    <input type="number" id="inp_imu_agev" value="4.8">
+                </div>
+                <div class="input-group">
+                    <label>Municipality</label>
+                    <input type="text" id="inp_comune" value="Vicenza">
+                </div>
+                <div class="input-group">
+                    <label>
+                        Existing Gross Income (€)
+                        <span id="badge-scaglione" class="badge-irpef">Bracket: --%</span>
+                    </label>
+                    <input type="number" id="inp_reddito" value="30000">
+                </div>
+            </div>
+
+            <div class="note">
+                <p><strong>Note on Reduced Tax Rate:</strong> To benefit from reduced Property Tax rates (e.g., <strong>4.8‰</strong> in Vicenza), the tenant must typically establish their <strong>primary residence</strong> in the property. Always check local municipal regulations for specific eligibility.</p>
+            </div>
+
+            <button id="btn-calc" class="btn btn-primary">Calculate Profitability</button>
+
+            <p class="disclaimer">
+                * Calculations are simulations based on inputs and current Italian fiscal regulations. They do not include regional/municipal income tax add-ons. The reduced municipal Property Tax rate, if applicable, includes the statutory 25% national discount. Professional tax advice is always recommended.
+            </p>
+
+            <!-- Web Results -->
+            <div id="web-results" class="results-section">
+                <div class="highlight-box">
+                    <p>Equivalent Free Market Rent (to match net yield)</p>
+                    <span id="res_canone_eq">-- €</span>
+                </div>
+                
+                <!-- Dynamic Tax Explanation -->
+                <div id="tax-explanation" class="explanation-box">
+                    <!-- Content populated by JS -->
+                </div>
+
+                <!-- WEB TABLE -->
+                <h3 style="font-size:16px; margin-bottom:10px; color:#111;">Fiscal Comparison Detail</h3>
+                <div class="web-table-wrapper">
+                    <table class="web-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Agreed (Flat Tax)</th>
+                                <th>Agreed (Income Tax)</th>
+                                <th>Market (Flat Tax)</th>
+                                <th>Market (Income Tax)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="web_table_body">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="chart-wrapper">
+                    <canvas id="webChart"></canvas>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:30px; flex-wrap:wrap;">
+                    <button id="btn-whatsapp" class="btn btn-whatsapp" style="flex:2;">Request WhatsApp Consultation</button>
+                    <button id="btn-pdf" class="btn btn-outline" style="flex:1;">Download PDF Report</button>
+                </div>
+            </div>
+
+            <footer>
+                <p><strong>Giuliato&Battistin Real Estate</strong></p>
+                <p>Corso SS. Felice e Fortunato, 29 - 36100 Vicenza (VI)</p>
+                <p>Email: <a href="mailto:info@giuliatobattistin.it">info@giuliatobattistin.it</a> | Phone: +39 0444 525447</p>
+            </footer>
+        </div>
+
+
+        <!-- 2. PDF VIEW (Hidden, used for generation) -->
+        <div id="pdf-template">
+            <!-- Header Letterhead -->
+            <div class="pdf-header-bar">
+                <div class="brand-name">Giuliato&Battistin</div>
+                <div class="brand-info">
+                    Corso SS. Felice e Fortunato 29, Vicenza<br>
+                    Tel: +39 0444 525447 | info@giuliatobattistin.it
+                </div>
+            </div>
+
+            <div class="pdf-title">Rental Fiscal Analysis Report</div>
+            <div class="pdf-date" id="pdf-date-field">Date: MM/DD/YYYY</div>
+
+            <!-- Input Data Section -->
+            <div class="no-break">
+                <div style="font-size:11px; font-weight:700; margin-bottom:5px; color:#333;">PROPERTY & OWNER DATA</div>
+                <div class="summary-grid">
+                    <div class="summary-item"><span class="summary-label">Municipality</span> <span class="summary-value" id="pdf_comune">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Cadastral Rent</span> <span class="summary-value" id="pdf_rendita">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Agreed Rent</span> <span class="summary-value" id="pdf_canone">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Taxable Income</span> <span class="summary-value" id="pdf_reddito">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Property Tax Rates</span> <span class="summary-value" id="pdf_imu">-</span></div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="pdf-results-container no-break">
+                <!-- Left: Key Metric -->
+                <div class="pdf-main-metric">
+                    <p>Equivalent Free Market Rent</p>
+                    <h3 id="pdf_eq_val">0 €</h3>
+                    <p style="font-size:9px; margin-top:5px; color:#666;">(Required to match Net Yield)</p>
+                </div>
+                <!-- Right: Chart -->
+                <div class="pdf-chart-box">
+                    <canvas id="pdfChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Detailed Table PDF -->
+            <div class="no-break">
+                <div style="font-size:11px; font-weight:700; margin-bottom:10px; color:#333;">COMPARATIVE FISCAL BREAKDOWN</div>
+                <table class="pdf-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Agreed (Flat Tax)</th>
+                            <th>Agreed (Income Tax)</th>
+                            <th>Market (Flat Tax)</th>
+                            <th>Market (Income Tax)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pdf_table_body">
+                        <!-- Filled via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Legal Notes & Footer -->
+            <div class="pdf-footer no-break">
+                <p>Simulation based on current regulations. Does not constitute binding fiscal advice.<br>
+                Reduced Property Tax (if applicable) includes 25% statutory discount. Tenant residency requirements apply.</p>
+                <p style="margin-top:10px;"><strong>Giuliato&Battistin Real Estate</strong> - www.giuliatobattistin.it</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Error Modal -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="color:#DC2626; margin-top:0;">Missing Data</h3>
+            <p>Please fill in all required fields to proceed.</p>
+            <button onclick="document.getElementById('modal').style.display='none'" class="btn btn-primary" style="width:auto;">OK</button>
+        </div>
+    </div>
+
+    <script>
+        const btnCalc = document.getElementById('btn-calc');
+        const btnPdf = document.getElementById('btn-pdf');
+        const btnWhatsapp = document.getElementById('btn-whatsapp');
+        const inpReddito = document.getElementById('inp_reddito');
+        const badgeScaglione = document.getElementById('badge-scaglione');
+        let chartWeb = null;
+        let chartPdf = null;
+        let lastData = {};
+
+        const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(n);
+
+        // Visual Marginal Rate Calculation
+        function updateMarginalBadge() {
+            const reddito = parseFloat(inpReddito.value) || 0;
+            let rate = 23;
+            if (reddito > 50000) rate = 43;
+            else if (reddito > 28000) rate = 35;
+            
+            badgeScaglione.style.display = 'inline-block';
+            badgeScaglione.innerText = `Max Bracket: ${rate}%`;
+        }
+        inpReddito.addEventListener('input', updateMarginalBadge);
+        updateMarginalBadge(); // Init
+
+        btnCalc.addEventListener('click', () => {
+            const canone = parseFloat(document.getElementById('inp_canone').value);
+            const rendita = parseFloat(document.getElementById('inp_rendita').value);
+            const imuOrd = parseFloat(document.getElementById('inp_imu').value);
+            const imuAgev = parseFloat(document.getElementById('inp_imu_agev').value);
+            const reddito = parseFloat(document.getElementById('inp_reddito').value);
+            const comune = document.getElementById('inp_comune').value;
+
+            if (!canone || !rendita) { document.getElementById('modal').style.display='flex'; return; }
+
+            const cedolareConcordato = 0.10;
+            const cedolareLibero = 0.21;
+            const abbattimentoConcordato = 0.30; 
+            const abbattimentoLibero = 0.05;     
+            
+            // IMU Calculation
+            const baseImu = rendita * 1.05 * 160;
+            const valImuOrd = baseImu * (imuOrd / 1000);
+            const valImuConc = (imuAgev > 0) ? (baseImu * (imuAgev/1000) * 0.75) : (valImuOrd * 0.75);
+
+            // Progressive Income Tax (IRPEF) Calculation
+            function getIrpef(imponibile) {
+                if (imponibile <= 28000) return imponibile * 0.23;
+                if (imponibile <= 50000) return 6440 + (imponibile - 28000) * 0.35;
+                return 14140 + (imponibile - 50000) * 0.43;
+            }
+            const irpefBase = getIrpef(reddito);
+
+            // Marginal Rate for Explanation
+            let marginalRate = 23;
+            if (reddito > 50000) marginalRate = 43;
+            else if (reddito > 28000) marginalRate = 35;
+
+            // Scenario A: Agreed Rent (Flat Tax)
+            const annuoConc = canone * 12;
+            const taxConcCed = annuoConc * cedolareConcordato;
+            const nettoConcCed = annuoConc - taxConcCed - valImuConc;
+
+            // Scenario B: Agreed Rent (Income Tax)
+            const impConcIrpef = annuoConc * (1 - abbattimentoConcordato);
+            const irpefDeltaConc = getIrpef(reddito + impConcIrpef) - irpefBase;
+            const nettoConcIrpef = annuoConc - irpefDeltaConc - valImuConc;
+
+            const nettoTarget = Math.max(nettoConcCed, nettoConcIrpef);
+
+            // Find Equivalent Market Rent
+            let eqLibero = canone;
+            let nettoLiberoBest = 0;
+            for(let i=0; i<5000; i++) {
+                let annuoL = eqLibero * 12;
+                let nLC = annuoL - (annuoL * cedolareLibero) - valImuOrd;
+                let impL = annuoL * (1 - abbattimentoLibero);
+                let taxL = getIrpef(reddito + impL) - irpefBase;
+                let nLI = annuoL - taxL - valImuOrd;
+                
+                nettoLiberoBest = Math.max(nLC, nLI);
+                if(nettoLiberoBest >= nettoTarget) { break; }
+                eqLibero += 1;
+            }
+            const annuoLibero = eqLibero * 12;
+            
+            // Final Table Data
+            const cedLiberoTax = annuoLibero * cedolareLibero;
+            const netLibCed = annuoLibero - cedLiberoTax - valImuOrd;
+            const impLibIrpef = annuoLibero * (1 - abbattimentoLibero);
+            const irpefLibTax = getIrpef(reddito + impLibIrpef) - irpefBase;
+            const netLibIrpef = annuoLibero - irpefLibTax - valImuOrd;
+
+            // 3. UI Updates
+            lastData = { canone, eqLibero, nettoTarget, comune };
+            document.getElementById('res_canone_eq').innerText = fmt(eqLibero) + " / mo";
+            
+            // Dynamic Tax Explanation
+            document.getElementById('tax-explanation').innerHTML = `
+                <strong>Why is Gross Income important?</strong><br>
+                With an income of <strong>${fmt(reddito)}</strong>, every additional euro of rent under the ordinary regime would be taxed at approximately <strong>${marginalRate}%</strong> (marginal rate).<br>
+                Choosing the <strong>Flat Tax</strong> (Cedolare Secca), you pay a fixed rate of <strong>10%</strong> (Agreed Rent) or <strong>21%</strong> (Market Rent), significantly saving on taxes.
+            `;
+            
+            document.getElementById('web-results').classList.add('visible');
+
+            // Chart
+            const ctxWeb = document.getElementById('webChart').getContext('2d');
+            if(chartWeb) chartWeb.destroy();
+            chartWeb = createChart(ctxWeb, annuoConc, annuoLibero, nettoTarget, netLibCed);
+
+            // Populate Tables (Web & PDF)
+            const row = (label, v1, v2, v3, v4, isBold=false) => `
+                <tr style="${isBold?'font-weight:700;':''}">
+                    <td>${label}</td>
+                    <td>${fmt(v1)}</td><td>${fmt(v2)}</td><td>${fmt(v3)}</td><td>${fmt(v4)}</td>
+                </tr>`;
+            const content = 
+                row("Gross Annual Rent", annuoConc, annuoConc, annuoLibero, annuoLibero) +
+                row("Taxes (Flat/Income)", taxConcCed, irpefDeltaConc, cedLiberoTax, irpefLibTax) +
+                row("Property Tax (IMU)", valImuConc, valImuConc, valImuOrd, valImuOrd) +
+                row("NET ANNUAL INCOME", nettoConcCed, nettoConcIrpef, netLibCed, netLibIrpef, true);
+            
+            document.getElementById('web_table_body').innerHTML = content;
+            document.getElementById('pdf_table_body').innerHTML = content;
+
+            // Update PDF Hidden Fields
+            document.getElementById('pdf-date-field').innerText = "Date: " + new Date().toLocaleDateString('en-US');
+            document.getElementById('pdf_comune').innerText = comune;
+            document.getElementById('pdf_rendita').innerText = fmt(rendita);
+            document.getElementById('pdf_canone').innerText = fmt(canone);
+            document.getElementById('pdf_reddito').innerText = fmt(reddito);
+            document.getElementById('pdf_imu').innerText = `Std: ${imuOrd}‰ / Red: ${imuAgev}‰`;
+            document.getElementById('pdf_eq_val').innerText = fmt(eqLibero);
+        });
+
+        function createChart(ctx, l1, l2, n1, n2) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Agreed Rent', 'Market Equiv.'],
+                    datasets: [
+                        { label: 'Gross', data: [l1, l2], backgroundColor: '#E0E7FF' },
+                        { label: 'Net', data: [n1, n2], backgroundColor: '#6366F1' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        btnPdf.addEventListener('click', async () => {
+            const originalBtnText = btnPdf.innerText;
+            btnPdf.innerText = "Generating PDF...";
+            document.body.classList.add('generating-pdf');
+            
+            const ctxPdf = document.getElementById('pdfChart').getContext('2d');
+            if(chartPdf) chartPdf.destroy();
+            chartPdf = new Chart(ctxPdf, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Net Agreed', 'Taxes Agreed', 'Net Market', 'Taxes Market'],
+                    datasets: [{
+                        data: [
+                            lastData.nettoTarget,
+                            (lastData.canone * 12) - lastData.nettoTarget,
+                            lastData.nettoTarget,
+                            (lastData.eqLibero * 12) - lastData.nettoTarget
+                        ],
+                        backgroundColor: ['#6366F1', '#A5B4FC', '#10B981', '#6EE7B7']
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } } } 
+                }
+            });
+            
+            await new Promise(r => setTimeout(r, 500));
+
+            const opt = {
+                margin: 0,
+                filename: `Report_Rent_Analysis_${lastData.comune}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(document.getElementById('pdf-template')).save().then(() => {
+                document.body.classList.remove('generating-pdf');
+                btnPdf.innerText = originalBtnText;
+            });
+        });
+
+        btnWhatsapp.addEventListener('click', () => {
+            if(!lastData.eqLibero) return;
+            const text = `Hi Giuliato&Battistin, I simulated an Agreed Rent of ${fmt(lastData.canone)} in ${lastData.comune}. The tool says it equals a Market Rent of ${fmt(lastData.eqLibero)}. I'd like to discuss this further.`;
+            window.open(`https://wa.me/390444525547?text=${encodeURIComponent(text)}`, '_blank');
+        });
+    </script>
+</body>
+</html>
