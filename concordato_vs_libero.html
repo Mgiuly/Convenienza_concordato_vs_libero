@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giuliato&Battistin | Report Analisi</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-primary: #6366F1;
+            --brand-dark: #4F46E5;
+            --brand-bg: #EEF2FF;
+            --whatsapp-green: #25D366;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F3F4F6;
+            color: var(--text-secondary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- INTERFACCIA UTENTE (Web View) --- */
+        .web-container {
+            padding: 32px;
+        }
+
+        h1 { color: var(--text-primary); font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        p.subtitle { text-align: center; font-size: 14px; margin-bottom: 32px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .input-group label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: var(--text-primary); }
+        .input-group input {
+            width: 100%; box-sizing: border-box; padding: 10px;
+            border: 1px solid var(--border-color); border-radius: 6px;
+            font-size: 14px; transition: border-color 0.2s;
+        }
+        .input-group input:focus { outline: none; border-color: var(--brand-primary); ring: 2px solid var(--brand-bg); }
+
+        /* Badge Scaglione */
+        .badge-irpef {
+            font-size: 11px; padding: 2px 6px; border-radius: 4px;
+            background-color: #FEF3C7; color: #D97706; font-weight: 600;
+            display: none; /* Visibile via JS */
+        }
+
+        .note {
+            background-color: rgba(234, 179, 8, 0.05);
+            border-left: 4px solid #F59E0B;
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .note p { margin: 0; font-size: 13px; color: #B45309; line-height: 1.5; }
+        .note strong { color: #92400E; }
+
+        .disclaimer {
+            font-size: 11px; color: #9CA3AF; margin-top: 24px; padding: 16px;
+            background-color: #F9FAFB; border-radius: 8px; line-height: 1.5;
+        }
+
+        footer {
+            text-align: center; margin-top: 40px; padding-top: 24px;
+            border-top: 1px solid #E5E7EB; font-size: 13px;
+        }
+        footer p { margin: 4px 0; }
+        footer strong { color: var(--text-primary); font-weight: 600; }
+        footer a { color: var(--brand-primary); text-decoration: none; }
+
+        /* Bottoni */
+        .btn {
+            display: inline-flex; justify-content: center; align-items: center;
+            padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;
+            cursor: pointer; border: none; transition: all 0.2s; text-decoration: none;
+            width: 100%; box-sizing: border-box;
+        }
+        .btn-primary { background-color: var(--brand-primary); color: white; }
+        .btn-primary:hover { background-color: var(--brand-dark); }
+        .btn-whatsapp { background-color: var(--whatsapp-green); color: white; }
+        .btn-outline { background-color: white; border: 1px solid var(--border-color); color: var(--text-primary); }
+        .btn-outline:hover { background-color: #F9FAFB; }
+
+        .results-section { display: none; margin-top: 40px; border-top: 1px solid var(--border-color); padding-top: 32px; }
+        .results-section.visible { display: block; }
+
+        .highlight-box {
+            background: var(--brand-bg); border-radius: 8px; padding: 20px;
+            text-align: center; margin-bottom: 24px;
+        }
+        .highlight-box span { display: block; font-size: 24px; font-weight: 700; color: var(--brand-primary); margin-top: 5px; }
+
+        /* Explanation Box */
+        .explanation-box {
+            background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px;
+            padding: 16px; margin-bottom: 32px; font-size: 13px; color: #166534;
+        }
+
+        .chart-wrapper { position: relative; height: 350px; width: 100%; margin: 20px 0; }
+
+        /* Tabella Web Style */
+        .web-table-wrapper { overflow-x: auto; margin-bottom: 30px; border: 1px solid #E5E7EB; border-radius: 8px; }
+        .web-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .web-table th { background-color: #F9FAFB; text-align: left; padding: 12px 16px; font-weight: 600; color: var(--text-primary); }
+        .web-table td { padding: 12px 16px; border-top: 1px solid #E5E7EB; color: var(--text-secondary); white-space: nowrap; }
+        .web-table tr:last-child td { font-weight: 700; color: var(--brand-dark); background-color: #EEF2FF; }
+
+        /* --- PDF LAYOUT SPECIFICO (Nascosto nel Web) --- */
+        #pdf-template {
+            display: none; /* Invisibile a schermo */
+            background: white;
+            width: 100%; /* Si adatterà al canvas del PDF */
+            font-family: 'Inter', sans-serif;
+            color: #111;
+        }
+
+        /* Quando generiamo il PDF, rendiamo visibile il template */
+        .generating-pdf #pdf-template { display: block; padding: 30px; }
+        .generating-pdf .web-container { display: none; } /* Nascondiamo la UI web */
+
+        /* Stili Report PDF */
+        .pdf-header-bar {
+            border-bottom: 2px solid var(--brand-primary);
+            padding-bottom: 15px; margin-bottom: 25px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+        .brand-name { font-size: 20px; font-weight: 800; color: var(--brand-primary); text-transform: uppercase; letter-spacing: -0.5px; }
+        .brand-info { font-size: 10px; text-align: right; color: #666; line-height: 1.4; }
+
+        .pdf-title { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 5px; }
+        .pdf-date { font-size: 11px; color: #888; margin-bottom: 25px; }
+
+        /* Griglia riassuntiva dati input (Molto compatta) */
+        .summary-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;
+            background: #F9FAFB; padding: 15px; border-radius: 6px;
+            margin-bottom: 25px; border: 1px solid #EEE;
+        }
+        .summary-item { display: flex; justify-content: space-between; border-bottom: 1px dotted #DDD; padding-bottom: 3px; }
+        .summary-label { font-size: 10px; color: #666; font-weight: 500; }
+        .summary-value { font-size: 11px; font-weight: 700; color: #111; }
+
+        /* Layout Risultati PDF */
+        .pdf-results-container {
+            display: flex; gap: 20px; margin-bottom: 25px;
+            break-inside: avoid; /* Non spezzare questo blocco */
+        }
+        .pdf-main-metric {
+            flex: 1; background: var(--brand-bg); border-radius: 6px; padding: 15px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        .pdf-main-metric p { font-size: 11px; color: #555; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .pdf-main-metric h3 { font-size: 22px; color: var(--brand-primary); margin: 5px 0 0 0; }
+        
+        .pdf-chart-box { flex: 2; height: 180px; position: relative; } /* Grafico piccolo e largo */
+
+        /* Tabella PDF pulita */
+        .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; }
+        .pdf-table th { text-align: left; background: #F3F4F6; padding: 6px 8px; font-weight: 600; color: #374151; }
+        .pdf-table td { border-bottom: 1px solid #EEE; padding: 6px 8px; color: #111; }
+        .pdf-table tr:last-child td { border-bottom: none; font-weight: 700; background: #F9FAFB; }
+
+        .pdf-footer {
+            margin-top: 30px; padding-top: 15px; border-top: 1px solid #EEE;
+            font-size: 9px; color: #999; text-align: center;
+            break-inside: avoid;
+        }
+
+        /* Utilità per il page break */
+        .no-break { break-inside: avoid; page-break-inside: avoid; }
+
+        /* Modale */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); z-index:99; justify-content:center; align-items:center; }
+        .modal-box { background:white; padding:20px; border-radius:8px; max-width:400px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper" id="main-app">
+        
+        <!-- 1. VISTA WEB (Quella che usa l'utente) -->
+        <div class="web-container">
+            <h1>Analisi Convenienza Locazione</h1>
+            <p class="subtitle">Confronto fiscale tra Canone Concordato e Canone Libero</p>
+
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>Canone Concordato Mensile (€)</label>
+                    <input type="number" id="inp_canone" value="650">
+                </div>
+                <div class="input-group">
+                    <label>Rendita Catastale (€)</label>
+                    <input type="number" id="inp_rendita" value="704.96">
+                </div>
+                <div class="input-group">
+                    <label>IMU Ordinaria (‰)</label>
+                    <input type="number" id="inp_imu" value="10.6">
+                </div>
+                <div class="input-group">
+                    <label>IMU Agevolata (‰)</label>
+                    <input type="number" id="inp_imu_agev" value="4.8">
+                </div>
+                <div class="input-group">
+                    <label>Comune</label>
+                    <input type="text" id="inp_comune" value="Vicenza">
+                </div>
+                <div class="input-group">
+                    <label>
+                        Reddito Lordo Esistente (€)
+                        <span id="badge-scaglione" class="badge-irpef">Scaglione: --%</span>
+                    </label>
+                    <input type="number" id="inp_reddito" value="30000">
+                </div>
+            </div>
+
+            <div class="note">
+                <p><strong>Nota per Aliquota Agevolata:</strong> Per usufruire di aliquote IMU agevolate (ad esempio, a Vicenza <strong>4,8‰</strong>), l'inquilino deve di norma stabilire la propria <strong>residenza principale</strong> nell'immobile. Verificare sempre il regolamento del Comune di riferimento al fine di verificare se sono previste agevolazioni sul canone.</p>
+            </div>
+
+            <button id="btn-calc" class="btn btn-primary">Calcola Convenienza</button>
+
+            <p class="disclaimer">
+                * I calcoli sono una simulazione basata sui dati inseriti e sulla normativa fiscale in vigore. Non includono addizionali IRPEF regionali/comunali. L'aliquota IMU agevolata comunale, se inserita, viene ulteriormente scontata del 25% come da normativa nazionale. Si raccomanda sempre una consulenza fiscale professionale per una valutazione completa.
+            </p>
+
+            <!-- Risultati Web -->
+            <div id="web-results" class="results-section">
+                <div class="highlight-box">
+                    <p>Canone Libero Equivalente (per pareggiare il netto)</p>
+                    <span id="res_canone_eq">-- €</span>
+                </div>
+                
+                <!-- Box Spiegazione Fiscale Dinamica -->
+                <div id="tax-explanation" class="explanation-box">
+                    <!-- Contenuto dinamico -->
+                </div>
+
+                <!-- TABELLA WEB (Spostata sopra il grafico per visibilità) -->
+                <h3 style="font-size:16px; margin-bottom:10px; color:#111;">Dettaglio Confronto Fiscale</h3>
+                <div class="web-table-wrapper">
+                    <table class="web-table">
+                        <thead>
+                            <tr>
+                                <th>Voce</th>
+                                <th>Concordato (Cedolare)</th>
+                                <th>Concordato (IRPEF)</th>
+                                <th>Libero (Cedolare)</th>
+                                <th>Libero (IRPEF)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="web_table_body">
+                            <!-- Popolata via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="chart-wrapper">
+                    <canvas id="webChart"></canvas>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:30px; flex-wrap:wrap;">
+                    <button id="btn-whatsapp" class="btn btn-whatsapp" style="flex:2;">Richiedi Consulenza WhatsApp</button>
+                    <button id="btn-pdf" class="btn btn-outline" style="flex:1;">Scarica Report PDF</button>
+                </div>
+            </div>
+
+            <footer>
+                <p><strong>Giuliato&Battistin Immobiliare</strong></p>
+                <p>Corso SS. Felice e Fortunato, 29 - 36100 Vicenza (VI)</p>
+                <p>Email: <a href="mailto:info@giuliatobattistin.it">info@giuliatobattistin.it</a> | Tel: 0444 525447</p>
+            </footer>
+        </div>
+
+
+        <!-- 2. VISTA PDF (Nascosta, usata solo per la generazione) -->
+        <div id="pdf-template">
+            <!-- Header Letterhead -->
+            <div class="pdf-header-bar">
+                <div class="brand-name">Giuliato&Battistin</div>
+                <div class="brand-info">
+                    Corso SS. Felice e Fortunato 29, Vicenza<br>
+                    Tel: 0444 525447 | info@giuliatobattistin.it
+                </div>
+            </div>
+
+            <div class="pdf-title">Report Analisi Fiscale Locazione</div>
+            <div class="pdf-date" id="pdf-date-field">Data: GG/MM/AAAA</div>
+
+            <!-- Sezione Dati Input (Compatta) -->
+            <div class="no-break">
+                <div style="font-size:11px; font-weight:700; margin-bottom:5px; color:#333;">DATI IMMOBILE E PROPRIETÀ</div>
+                <div class="summary-grid">
+                    <div class="summary-item"><span class="summary-label">Comune</span> <span class="summary-value" id="pdf_comune">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Rendita Catastale</span> <span class="summary-value" id="pdf_rendita">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Canone Concordato</span> <span class="summary-value" id="pdf_canone">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Reddito Imponibile</span> <span class="summary-value" id="pdf_reddito">-</span></div>
+                    <div class="summary-item"><span class="summary-label">Aliquote IMU</span> <span class="summary-value" id="pdf_imu">-</span></div>
+                </div>
+            </div>
+
+            <!-- Sezione Risultati (Affiancata: Box + Grafico) -->
+            <div class="pdf-results-container no-break">
+                <!-- Sinistra: Numero Chiave -->
+                <div class="pdf-main-metric">
+                    <p>Canone Libero Equivalente</p>
+                    <h3 id="pdf_eq_val">0 €</h3>
+                    <p style="font-size:9px; margin-top:5px; color:#666;">(Necessario per pareggiare il netto)</p>
+                </div>
+                <!-- Destra: Grafico -->
+                <div class="pdf-chart-box">
+                    <canvas id="pdfChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabella Dettagliata PDF -->
+            <div class="no-break">
+                <div style="font-size:11px; font-weight:700; margin-bottom:10px; color:#333;">DETTAGLIO FISCALE COMPARATIVO</div>
+                <table class="pdf-table">
+                    <thead>
+                        <tr>
+                            <th>Voce</th>
+                            <th>Concordato (Cedolare)</th>
+                            <th>Concordato (IRPEF)</th>
+                            <th>Libero (Cedolare)</th>
+                            <th>Libero (IRPEF)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pdf_table_body">
+                        <!-- Riempito via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Note Legali e Footer -->
+            <div class="pdf-footer no-break">
+                <p>Simulazione basata sulla normativa vigente. Non costituisce parere fiscale vincolante.<br>
+                L'aliquota agevolata IMU (se applicabile) è calcolata con riduzione 25%. Verificare requisiti residenza inquilino.</p>
+                <p style="margin-top:10px;"><strong>Giuliato&Battistin Immobiliare</strong> - www.giuliatobattistin.it</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modale Errore -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="color:#DC2626; margin-top:0;">Dati Mancanti</h3>
+            <p>Inserisci tutti i dati richiesti per procedere.</p>
+            <button onclick="document.getElementById('modal').style.display='none'" class="btn btn-primary" style="width:auto;">OK</button>
+        </div>
+    </div>
+
+    <script>
+        const btnCalc = document.getElementById('btn-calc');
+        const btnPdf = document.getElementById('btn-pdf');
+        const btnWhatsapp = document.getElementById('btn-whatsapp');
+        const inpReddito = document.getElementById('inp_reddito');
+        const badgeScaglione = document.getElementById('badge-scaglione');
+        let chartWeb = null;
+        let chartPdf = null;
+        let lastData = {};
+
+        const fmt = (n) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n);
+
+        // Calcolo aliquota marginale visuale
+        function updateMarginalBadge() {
+            const reddito = parseFloat(inpReddito.value) || 0;
+            let rate = 23;
+            if (reddito > 50000) rate = 43;
+            else if (reddito > 28000) rate = 35;
+            
+            badgeScaglione.style.display = 'inline-block';
+            badgeScaglione.innerText = `Scaglione Max: ${rate}%`;
+        }
+        inpReddito.addEventListener('input', updateMarginalBadge);
+        updateMarginalBadge(); // Init
+
+        btnCalc.addEventListener('click', () => {
+            const canone = parseFloat(document.getElementById('inp_canone').value);
+            const rendita = parseFloat(document.getElementById('inp_rendita').value);
+            const imuOrd = parseFloat(document.getElementById('inp_imu').value);
+            const imuAgev = parseFloat(document.getElementById('inp_imu_agev').value);
+            const reddito = parseFloat(document.getElementById('inp_reddito').value);
+            const comune = document.getElementById('inp_comune').value;
+
+            if (!canone || !rendita) { document.getElementById('modal').style.display='flex'; return; }
+
+            const cedolareConcordato = 0.10;
+            const cedolareLibero = 0.21;
+            const abbattimentoConcordato = 0.30; 
+            const abbattimentoLibero = 0.05;     
+            
+            // IMU
+            const baseImu = rendita * 1.05 * 160;
+            const valImuOrd = baseImu * (imuOrd / 1000);
+            const valImuConc = (imuAgev > 0) ? (baseImu * (imuAgev/1000) * 0.75) : (valImuOrd * 0.75);
+
+            // Calcolo IRPEF progressiva
+            function getIrpef(imponibile) {
+                if (imponibile <= 28000) return imponibile * 0.23;
+                if (imponibile <= 50000) return 6440 + (imponibile - 28000) * 0.35;
+                return 14140 + (imponibile - 50000) * 0.43;
+            }
+            const irpefBase = getIrpef(reddito);
+
+            // Calcolo Aliquota Marginale effettiva per spiegazione
+            let marginalRate = 23;
+            if (reddito > 50000) marginalRate = 43;
+            else if (reddito > 28000) marginalRate = 35;
+
+            // Scenario A: Concordato Cedolare
+            const annuoConc = canone * 12;
+            const taxConcCed = annuoConc * cedolareConcordato;
+            const nettoConcCed = annuoConc - taxConcCed - valImuConc;
+
+            // Scenario B: Concordato IRPEF
+            const impConcIrpef = annuoConc * (1 - abbattimentoConcordato);
+            const irpefDeltaConc = getIrpef(reddito + impConcIrpef) - irpefBase;
+            const nettoConcIrpef = annuoConc - irpefDeltaConc - valImuConc;
+
+            const nettoTarget = Math.max(nettoConcCed, nettoConcIrpef);
+
+            // Trova Libero Equivalente
+            let eqLibero = canone;
+            let nettoLiberoBest = 0;
+            for(let i=0; i<5000; i++) {
+                let annuoL = eqLibero * 12;
+                let nLC = annuoL - (annuoL * cedolareLibero) - valImuOrd;
+                let impL = annuoL * (1 - abbattimentoLibero);
+                let taxL = getIrpef(reddito + impL) - irpefBase;
+                let nLI = annuoL - taxL - valImuOrd;
+                
+                nettoLiberoBest = Math.max(nLC, nLI);
+                if(nettoLiberoBest >= nettoTarget) { break; }
+                eqLibero += 1;
+            }
+            const annuoLibero = eqLibero * 12;
+            
+            // Dati finali Tabella
+            const cedLiberoTax = annuoLibero * cedolareLibero;
+            const netLibCed = annuoLibero - cedLiberoTax - valImuOrd;
+            const impLibIrpef = annuoLibero * (1 - abbattimentoLibero);
+            const irpefLibTax = getIrpef(reddito + impLibIrpef) - irpefBase;
+            const netLibIrpef = annuoLibero - irpefLibTax - valImuOrd;
+
+            // 3. UI Updates
+            lastData = { canone, eqLibero, nettoTarget, comune };
+            document.getElementById('res_canone_eq').innerText = fmt(eqLibero) + " / mese";
+            
+            // Spiegazione Fiscale Dinamica
+            document.getElementById('tax-explanation').innerHTML = `
+                <strong>Perché il Reddito Lordo è importante?</strong><br>
+                Con un reddito di <strong>${fmt(reddito)}</strong>, ogni euro aggiuntivo di affitto nel regime ordinario verrebbe tassato circa al <strong>${marginalRate}%</strong> (aliquota marginale).<br>
+                Scegliendo la <strong>Cedolare Secca</strong>, pagheresti invece un'imposta fissa (Flat Tax) del <strong>10%</strong> (Concordato) o <strong>21%</strong> (Libero), risparmiando notevolmente sulle imposte.
+            `;
+            
+            document.getElementById('web-results').classList.add('visible');
+
+            // Grafico
+            const ctxWeb = document.getElementById('webChart').getContext('2d');
+            if(chartWeb) chartWeb.destroy();
+            chartWeb = createChart(ctxWeb, annuoConc, annuoLibero, nettoTarget, netLibCed);
+
+            // Populate Tables (Web & PDF)
+            const row = (label, v1, v2, v3, v4, isBold=false) => `
+                <tr style="${isBold?'font-weight:700;':''}">
+                    <td>${label}</td>
+                    <td>${fmt(v1)}</td><td>${fmt(v2)}</td><td>${fmt(v3)}</td><td>${fmt(v4)}</td>
+                </tr>`;
+            const content = 
+                row("Canone Annuo Lordo", annuoConc, annuoConc, annuoLibero, annuoLibero) +
+                row("Imposte (Ced./IRPEF)", taxConcCed, irpefDeltaConc, cedLiberoTax, irpefLibTax) +
+                row("IMU", valImuConc, valImuConc, valImuOrd, valImuOrd) +
+                row("NETTO ANNUO", nettoConcCed, nettoConcIrpef, netLibCed, netLibIrpef, true);
+            
+            document.getElementById('web_table_body').innerHTML = content;
+            document.getElementById('pdf_table_body').innerHTML = content;
+
+            // Update PDF Hidden Fields
+            document.getElementById('pdf-date-field').innerText = "Data: " + new Date().toLocaleDateString('it-IT');
+            document.getElementById('pdf_comune').innerText = comune;
+            document.getElementById('pdf_rendita').innerText = fmt(rendita);
+            document.getElementById('pdf_canone').innerText = fmt(canone);
+            document.getElementById('pdf_reddito').innerText = fmt(reddito);
+            document.getElementById('pdf_imu').innerText = `Ord: ${imuOrd}‰ / Agev: ${imuAgev}‰`;
+            document.getElementById('pdf_eq_val').innerText = fmt(eqLibero);
+        });
+
+        function createChart(ctx, l1, l2, n1, n2) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Concordato', 'Libero Equiv.'],
+                    datasets: [
+                        { label: 'Lordo', data: [l1, l2], backgroundColor: '#E0E7FF' },
+                        { label: 'Netto', data: [n1, n2], backgroundColor: '#6366F1' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        btnPdf.addEventListener('click', async () => {
+            const originalBtnText = btnPdf.innerText;
+            btnPdf.innerText = "Creazione PDF...";
+            document.body.classList.add('generating-pdf');
+            
+            const ctxPdf = document.getElementById('pdfChart').getContext('2d');
+            if(chartPdf) chartPdf.destroy();
+            chartPdf = new Chart(ctxPdf, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Netto Concordato', 'Tasse Conc.', 'Netto Libero', 'Tasse Libero'],
+                    datasets: [{
+                        data: [
+                            lastData.nettoTarget,
+                            (lastData.canone * 12) - lastData.nettoTarget,
+                            lastData.nettoTarget,
+                            (lastData.eqLibero * 12) - lastData.nettoTarget
+                        ],
+                        backgroundColor: ['#6366F1', '#A5B4FC', '#10B981', '#6EE7B7']
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } } } 
+                }
+            });
+            
+            await new Promise(r => setTimeout(r, 500));
+
+            const opt = {
+                margin: 0,
+                filename: `Report_Locazione_${lastData.comune}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(document.getElementById('pdf-template')).save().then(() => {
+                document.body.classList.remove('generating-pdf');
+                btnPdf.innerText = originalBtnText;
+            });
+        });
+
+        btnWhatsapp.addEventListener('click', () => {
+            if(!lastData.eqLibero) return;
+            const text = `Salve Giuliato&Battistin, ho simulato un canone concordato di ${fmt(lastData.canone)} a ${lastData.comune}. Il calcolatore dice che equivale a un libero di ${fmt(lastData.eqLibero)}. Vorrei approfondire.`;
+            window.open(`https://wa.me/390444525547?text=${encodeURIComponent(text)}`, '_blank');
+        });
+    </script>
+</body>
+</html>
