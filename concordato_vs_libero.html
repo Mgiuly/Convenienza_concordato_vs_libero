@@ -266,7 +266,7 @@
                 <button type="submit" id="btn-calc" class="btn btn-primary">Calcola Convenienza</button>
             </form>
 
-            <p class="disclaimer">* I calcoli sono una simulazione basata sui dati inseriti e sulla normativa fiscale in vigore. Non includono addizionali IRPEF regionali/comunali. L'aliquota IMU agevolata comunale, se inserita, viene ulteriormente scontata del 25% come da normativa nazionale. Si raccomanda sempre una consulenza fiscale professionale per una valutazione completa.</p>
+            <p class="disclaimer">* I calcoli sono una simulazione basata sui dati inseriti e sulla normativa fiscale in vigore. Non includono addizionali IRPEF regionali/comunali. L'aliquota IMU agevolata comunale, se inserita, viene ulteriormente scontata del 25% come da normativa nazionale. Scaglioni IRPEF applicati (2026): 23% fino a 28.000 €, 33% fino a 50.000 €, 43% oltre. Si raccomanda sempre una consulenza fiscale professionale per una valutazione completa.</p>
 
             <!-- Web results -->
             <section id="web-results" class="results-section" aria-labelledby="res-title" tabindex="-1">
@@ -389,7 +389,7 @@
             const reddito = parseFloat(inpReddito.value) || 0;
             let rate = 23;
             if (reddito > 50000) rate = 43;
-            else if (reddito > 28000) rate = 35;
+            else if (reddito > 28000) rate = 33;
 
             badgeScaglione.hidden = false;
             badgeScaglione.innerText = `Scaglione Max: ${rate}%`;
@@ -436,26 +436,26 @@
             const valImuOrd = baseImu * (imuOrd / 1000);
             const valImuConc = (imuAgev > 0) ? (baseImu * (imuAgev/1000) * 0.75) : (valImuOrd * 0.75);
 
-            // Progressive IRPEF
+            // Progressive IRPEF (2026 brackets: 23% up to 28,000, 33% up to 50,000, 43% above)
             function getIrpef(imponibile) {
                 if (imponibile <= 28000) return imponibile * 0.23;
-                if (imponibile <= 50000) return 6440 + (imponibile - 28000) * 0.35;
-                return 14140 + (imponibile - 50000) * 0.43;
+                if (imponibile <= 50000) return 6440 + (imponibile - 28000) * 0.33;
+                return 13700 + (imponibile - 50000) * 0.43;
             }
             const irpefBase = getIrpef(reddito);
 
             // Effective marginal rate for the explanation
             let marginalRate = 23;
             if (reddito > 50000) marginalRate = 43;
-            else if (reddito > 28000) marginalRate = 35;
+            else if (reddito > 28000) marginalRate = 33;
 
             // Scenario A: Agreed rent, flat tax
             const annuoConc = canone * 12;
             const taxConcCed = annuoConc * cedolareConcordato;
             const nettoConcCed = annuoConc - taxConcCed - valImuConc;
 
-            // Scenario B: Agreed rent, IRPEF
-            const impConcIrpef = annuoConc * (1 - abbattimentoConcordato);
+            // Scenario B: Agreed rent, IRPEF: 5% flat deduction, then a further 30% reduction (taxable = 66.5% of the rent)
+            const impConcIrpef = annuoConc * (1 - abbattimentoLibero) * (1 - abbattimentoConcordato);
             const irpefDeltaConc = getIrpef(reddito + impConcIrpef) - irpefBase;
             const nettoConcIrpef = annuoConc - irpefDeltaConc - valImuConc;
 
